@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#ff6b9d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="恋屿" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+  <link rel="apple-touch-icon" href="/icon-512.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <title>恋屿 · 双人恋爱工作台</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="fxLayer" class="fx-layer"></div>
+
+  <!-- 配对页 -->
+  <section id="pairScreen" class="pair-screen">
+    <div class="pair-card">
+      <div class="pair-logo"><img src="/icon-512.png" alt="恋屿" /></div>
+      <h1>恋屿</h1>
+      <p class="pair-sub">一座只属于你们两个人的小岛</p>
+      <div id="pairForm">
+        <div class="pair-tabs">
+          <button class="pair-tab active" data-mode="create">创造小岛</button>
+          <button class="pair-tab" data-mode="join">登上小岛</button>
+        </div>
+        <div class="pair-body">
+          <label class="field"><span>你的昵称</span>
+            <input id="pairName" type="text" maxlength="12" placeholder="例如：小可爱" /></label>
+          <div class="field" id="joinCodeField" style="display:none">
+            <span>对方给你的连接码</span>
+            <input id="pairCode" type="text" maxlength="5" placeholder="5 位字母数字" style="text-transform:uppercase" />
+          </div>
+          <button id="pairBtn" class="btn-primary">🌱 创造我们的小岛</button>
+          <p class="pair-tip">一台手机点「创造小岛」，把连接码发给另一台，对方选「登上小岛」输入即可牵手。</p>
+          <button id="btnServer" class="link-btn" type="button">⚙️ 设置服务器地址（家里 WiFi / 云端）</button>
+        </div>
+      </div>
+      <div id="pairLoading" class="pair-loading" style="display:none">
+        <div class="spinner"></div><p id="pairLoadingText">正在牵手…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 主应用 -->
+  <div id="app" class="app" style="display:none">
+    <nav class="sidebar" id="sidebar"></nav>
+    <div class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <img src="/icon-192.png" class="topbar-logo" alt="" />
+          <div>
+            <div class="topbar-title">恋屿</div>
+            <div class="topbar-status">
+              <span id="peerDot" class="dot off"></span>
+              <span id="peerName">对方</span> · <span id="peerOnline">离线</span>
+            </div>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button id="btnHeart" class="icon-btn" title="怦怦一下" data-ic="heart"></button>
+          <button id="btnHug" class="icon-btn" title="抱抱" data-ic="hug"></button>
+          <button id="btnSettings" class="icon-btn" title="设置" data-ic="gear"></button>
+        </div>
+      </header>
+
+      <main id="views" class="views">
+        <section class="view active" data-view="home"><div id="homeContent"></div></section>
+
+        <section class="view" data-view="chat">
+          <div id="chatBox" class="chat-box"></div>
+          <div id="typingTip" class="typing-tip"></div>
+          <div class="chat-tools">
+            <button id="btnMic" class="tool-btn" title="语音消息" data-ic="mic"></button>
+            <button id="btnLoc" class="tool-btn" title="共享位置" data-ic="pin"></button>
+            <button id="btnSticker" class="tool-btn" title="贴纸" data-ic="sticker"></button>
+          </div>
+          <div id="recBar" class="rec-bar" style="display:none">
+            <span class="rec-dot"></span><span id="recTime">0″</span>
+            <button id="btnRecStop" class="rec-stop" data-ic="stop"></button>
+          </div>
+          <div id="stickerPanel" class="sticker-panel" style="display:none"></div>
+          <div id="quickEmoji" class="quick-row"></div>
+          <div class="chat-input-row">
+            <input id="chatText" type="text" placeholder="说点甜甜的话…" maxlength="1000" />
+            <button id="btnSend" class="btn-send" data-ic="send"></button>
+          </div>
+        </section>
+
+        <section class="view" data-view="wish">
+          <div class="section-head"><h2>📝 一起的愿望清单</h2><span id="wishProgress" class="pill">0/0</span></div>
+          <div id="wishList" class="wish-list"></div>
+          <div class="add-row">
+            <input id="wishInput" type="text" placeholder="想一起做的事，比如「去看一次海」" maxlength="200" />
+            <button id="btnWishAdd" class="btn-add">＋</button>
+          </div>
+        </section>
+
+        <section class="view" data-view="moment">
+          <div class="section-head"><h2>✨ 共享瞬间</h2></div>
+          <div id="momentList" class="moment-list"></div>
+          <div class="moment-input">
+            <div class="emoji-pick" id="momentEmoji">✨</div>
+            <input id="momentText" type="text" placeholder="记下一个小瞬间…" maxlength="500" />
+            <button id="btnMomentAdd" class="btn-add">＋</button>
+          </div>
+          <div class="emoji-strip" id="momentEmojiStrip"></div>
+        </section>
+
+        <section class="view" data-view="game">
+          <div class="section-head"><h2>🎮 情侣小游戏</h2></div>
+          <div class="game-tabs">
+            <button class="game-tab active" data-game="tacit">默契考验</button>
+            <button class="game-tab" data-game="truth">真心话大冒险</button>
+          </div>
+          <div id="gameBody"></div>
+        </section>
+      </main>
+
+      <nav class="tabbar" id="tabbar"></nav>
+    </div>
+  </div>
+
+  <div id="modal" class="modal" style="display:none">
+    <div class="modal-mask" data-close></div>
+    <div class="modal-card">
+      <button class="modal-close" data-close>✕</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- 安装到手机引导 -->
+  <div id="installBanner" class="install-banner" style="display:none">
+    <div class="ib-emoji">💗</div>
+    <div class="ib-text">
+      <b>把恋屿装进手机</b>
+      <span>添加到主屏幕，像 App 一样随时打开</span>
+    </div>
+    <button id="installBtn" class="ib-btn" type="button">安装</button>
+    <button class="ib-close" data-close-install type="button">✕</button>
+  </div>
+
+  <!-- iOS 安装提示 -->
+  <div id="iosHint" class="ios-hint" style="display:none">
+    用 Safari 打开后，点底部「分享」▶「添加到主屏幕」即可装到手机 💗
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script>if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); }); }</script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

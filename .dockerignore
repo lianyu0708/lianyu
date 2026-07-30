@@ -1,0 +1,7 @@
+node_modules
+android
+.git
+*.log
+data.json
+Dockerfile
+.dockerignore
